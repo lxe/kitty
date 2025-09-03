@@ -416,7 +416,9 @@ option_names = (
     'scrollback_pager',
     'scrollback_pager_history_size',
     'scrollbar_gap',
+    'scrollbar_hitbox_expansion',
     'scrollbar_interactive',
+    'scrollbar_min_thumb_height',
     'scrollbar_opacity',
     'scrollbar_track_opacity',
     'scrollbar_width',
@@ -595,7 +597,9 @@ class Options:
     scrollback_pager: list[str] = ['less', '--chop-long-lines', '--RAW-CONTROL-CHARS', '+INPUT_LINE_NUMBER']
     scrollback_pager_history_size: int = 0
     scrollbar_gap: int = 1
+    scrollbar_hitbox_expansion: int = 5
     scrollbar_interactive: bool = True
+    scrollbar_min_thumb_height: int = 50
     scrollbar_opacity: float = 0.75
     scrollbar_track_opacity: float = 0.15
     scrollbar_width: int = 10

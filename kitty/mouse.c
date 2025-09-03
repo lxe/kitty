@@ -833,7 +833,7 @@ calculate_scrollbar_geometry(Window *w) {
     
     return (ScrollbarGeometry){
         .right_x = right_with_spaces - gap_px,
-        .left_x = right_with_spaces - gap_px - width_px - SCROLLBAR_HITBOX_EXPANSION_PX,
+        .left_x = right_with_spaces - gap_px - width_px - (float)OPT(scrollbar_hitbox_expansion),
         .top_y = top_with_spaces + gap_px,
         .bottom_y = bottom_with_spaces - gap_px,
         .width_px = width_px,
@@ -868,7 +868,7 @@ get_scrollbar_hit_type(Window *w, double mouse_x, double mouse_y) {
     // Check thumb hit with expanded hitbox
     OSWindow *os_window = global_state.callback_os_window;
     float mouse_window_fraction = (float)mouse_y / (float)os_window->viewport_height;
-    float hitbox_expansion_fraction = SCROLLBAR_HITBOX_EXPANSION_PX / (float)os_window->viewport_height;
+    float hitbox_expansion_fraction = (float)OPT(scrollbar_hitbox_expansion) / (float)os_window->viewport_height;
     
     if (mouse_window_fraction >= (w->scrollbar.thumb_top - hitbox_expansion_fraction) && 
         mouse_window_fraction <= (w->scrollbar.thumb_bottom + hitbox_expansion_fraction)) {
@@ -948,7 +948,7 @@ handle_scrollbar_drag(Window *w, double mouse_y) {
     // Calculate how much to scroll based on drag distance
     float visible_fraction = (float)screen->lines / (float)(screen->lines + screen->historybuf->count);
     float scrollbar_height_px = (float)(geom.bottom_y - geom.top_y);
-    float min_thumb_height_fraction = SCROLLBAR_MIN_THUMB_HEIGHT_PX / scrollbar_height_px;
+    float min_thumb_height_fraction = (float)OPT(scrollbar_min_thumb_height) / scrollbar_height_px;
     float thumb_height = MAX(min_thumb_height_fraction, visible_fraction);
     float available_space = 1.0f - thumb_height;
     

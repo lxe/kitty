@@ -471,6 +471,15 @@ The width of the scrollbar in pixels. The default is 10 pixels.''')
 opt('scrollbar_gap', '1',
     option_type='positive_int', ctype='uint', long_text='''
 The gap between the scrollbar and the window edge in pixels. The default is 1 pixel.''')
+opt('scrollbar_min_thumb_height', '50',
+    option_type='positive_int', ctype='uint', long_text='''
+The minimum height of the scrollbar thumb in pixels. This prevents the thumb from
+becoming too small when there is a lot of content to scroll. The default is 50 pixels.''')
+opt('scrollbar_hitbox_expansion', '5',
+    option_type='positive_int', ctype='uint', long_text='''
+Extra pixels added to the scrollbar thumb hitbox for easier interaction.
+This makes it easier to grab the scrollbar even if the visual representation
+is thin. The default is 5 pixels on each side.''')
 
 
 opt('scrollback_pager', 'less --chop-long-lines --RAW-CONTROL-CHARS +INPUT_LINE_NUMBER',

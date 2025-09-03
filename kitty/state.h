@@ -20,9 +20,6 @@
 #define debug_input(...) if (OPT(debug_keyboard)) { timed_debug_print(__VA_ARGS__); }
 #define debug_fonts(...) if (global_state.debug_font_fallback) { timed_debug_print(__VA_ARGS__); }
 
-#define SCROLLBAR_MIN_THUMB_HEIGHT_PX 50.0f
-#define SCROLLBAR_HITBOX_EXPANSION_PX 5.0f
-
 typedef enum { LEFT_EDGE = 1, TOP_EDGE = 2, RIGHT_EDGE = 4, BOTTOM_EDGE = 8 } Edge;
 typedef enum { REPEAT_MIRROR, REPEAT_CLAMP, REPEAT_DEFAULT } RepeatStrategy;
 typedef enum { WINDOW_NORMAL, WINDOW_FULLSCREEN, WINDOW_MAXIMIZED, WINDOW_MINIMIZED, WINDOW_HIDDEN } WindowState;
@@ -79,6 +76,8 @@ typedef struct Options {
     float scrollbar_track_opacity;
     unsigned int scrollbar_width;
     unsigned int scrollbar_gap;
+    unsigned int scrollbar_min_thumb_height;
+    unsigned int scrollbar_hitbox_expansion;
     float text_contrast, text_gamma_adjustment;
     bool text_old_gamma;
 

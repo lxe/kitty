@@ -331,6 +331,32 @@ convert_from_opts_scrollbar_gap(PyObject *py_opts, Options *opts) {
 }
 
 static void
+convert_from_python_scrollbar_min_thumb_height(PyObject *val, Options *opts) {
+    opts->scrollbar_min_thumb_height = PyLong_AsUnsignedLong(val);
+}
+
+static void
+convert_from_opts_scrollbar_min_thumb_height(PyObject *py_opts, Options *opts) {
+    PyObject *ret = PyObject_GetAttrString(py_opts, "scrollbar_min_thumb_height");
+    if (ret == NULL) return;
+    convert_from_python_scrollbar_min_thumb_height(ret, opts);
+    Py_DECREF(ret);
+}
+
+static void
+convert_from_python_scrollbar_hitbox_expansion(PyObject *val, Options *opts) {
+    opts->scrollbar_hitbox_expansion = PyLong_AsUnsignedLong(val);
+}
+
+static void
+convert_from_opts_scrollbar_hitbox_expansion(PyObject *py_opts, Options *opts) {
+    PyObject *ret = PyObject_GetAttrString(py_opts, "scrollbar_hitbox_expansion");
+    if (ret == NULL) return;
+    convert_from_python_scrollbar_hitbox_expansion(ret, opts);
+    Py_DECREF(ret);
+}
+
+static void
 convert_from_python_scrollback_pager_history_size(PyObject *val, Options *opts) {
     opts->scrollback_pager_history_size = PyLong_AsUnsignedLong(val);
 }
@@ -1304,6 +1330,10 @@ convert_opts_from_python_opts(PyObject *py_opts, Options *opts) {
     convert_from_opts_scrollbar_width(py_opts, opts);
     if (PyErr_Occurred()) return false;
     convert_from_opts_scrollbar_gap(py_opts, opts);
+    if (PyErr_Occurred()) return false;
+    convert_from_opts_scrollbar_min_thumb_height(py_opts, opts);
+    if (PyErr_Occurred()) return false;
+    convert_from_opts_scrollbar_hitbox_expansion(py_opts, opts);
     if (PyErr_Occurred()) return false;
     convert_from_opts_scrollback_pager_history_size(py_opts, opts);
     if (PyErr_Occurred()) return false;

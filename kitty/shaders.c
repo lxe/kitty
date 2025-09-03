@@ -896,7 +896,7 @@ draw_scrollbar(const UIRenderData *ui) {
 
     float visible_fraction = (float)screen->lines / (float)(screen->lines + screen->historybuf->count);
     
-    float min_thumb_height_fraction = SCROLLBAR_MIN_THUMB_HEIGHT_PX / (float)window_height;
+    float min_thumb_height_fraction = (float)OPT(scrollbar_min_thumb_height) / (float)window_height;
     float thumb_height_fraction = MAX(min_thumb_height_fraction, visible_fraction);
     float thumb_height_gl = thumb_height_fraction * 2.0f;
     

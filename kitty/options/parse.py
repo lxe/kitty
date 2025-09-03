@@ -1211,8 +1211,14 @@ class Parser:
     def scrollbar_gap(self, val: str, ans: dict[str, typing.Any]) -> None:
         ans['scrollbar_gap'] = positive_int(val)
 
+    def scrollbar_hitbox_expansion(self, val: str, ans: dict[str, typing.Any]) -> None:
+        ans['scrollbar_hitbox_expansion'] = positive_int(val)
+
     def scrollbar_interactive(self, val: str, ans: dict[str, typing.Any]) -> None:
         ans['scrollbar_interactive'] = to_bool(val)
+
+    def scrollbar_min_thumb_height(self, val: str, ans: dict[str, typing.Any]) -> None:
+        ans['scrollbar_min_thumb_height'] = positive_int(val)
 
     def scrollbar_opacity(self, val: str, ans: dict[str, typing.Any]) -> None:
         ans['scrollbar_opacity'] = unit_float(val)
