@@ -448,6 +448,30 @@ along the right hand side of the window as you scroll, indicating what fraction 
 have scrolled. The default is one which means fully opaque, aka visible.
 Set to a value between zero and one to make the indicator less visible.''')
 
+opt('scrollbar_opacity', '0.75',
+    option_type='unit_float', ctype='float', long_text='''
+The opacity of the scrollbar handle. The default is 0.75 which means 75% opaque.
+Set to a value between zero and one.''')
+
+opt('scrollbar_track_opacity', '0.15',
+    option_type='unit_float', ctype='float', long_text='''
+The opacity of the scrollbar track (the background behind the scrollbar handle).
+The default is 0.15 which means 15% opaque. Set to a value between zero and one.''')
+
+opt('scrollbar_interactive', 'yes',
+    option_type='to_bool', ctype='bool', long_text='''
+Enable or disable interactive scrollbar functionality. When enabled, you can click
+and drag the scrollbar to scroll. When disabled, the scrollbar is only a visual
+indicator of the scroll position. Set to :code:`yes` to enable or :code:`no` to disable.''')
+
+opt('scrollbar_width', '10',
+    option_type='positive_int', ctype='uint', long_text='''
+The width of the scrollbar in pixels. The default is 10 pixels.''')
+
+opt('scrollbar_gap', '1',
+    option_type='positive_int', ctype='uint', long_text='''
+The gap between the scrollbar and the window edge in pixels. The default is 1 pixel.''')
+
 
 opt('scrollback_pager', 'less --chop-long-lines --RAW-CONTROL-CHARS +INPUT_LINE_NUMBER',
     option_type='to_cmdline',

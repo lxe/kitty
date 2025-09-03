@@ -987,16 +987,20 @@ PYWRAP1(set_window_padding) {
 
 PYWRAP1(set_window_render_data) {
 #define B(name) &(g.name)
+#define S(name) &(g.spaces.name)
     id_type os_window_id, tab_id, window_id;
     WindowGeometry g = {0};
     Screen *screen;
-    PA("KKKOIIII", &os_window_id, &tab_id, &window_id, &screen, B(left), B(top), B(right), B(bottom));
+    PA("KKKOIIIIIIII", &os_window_id, &tab_id, &window_id, &screen, 
+       B(left), B(top), B(right), B(bottom),
+       S(left), S(top), S(right), S(bottom));
 
     WITH_WINDOW(os_window_id, tab_id, window_id);
         init_window_render_data(&window->render_data, g, screen);
     END_WITH_WINDOW;
     Py_RETURN_NONE;
 #undef B
+#undef S
 }
 
 PYWRAP1(update_window_visibility) {

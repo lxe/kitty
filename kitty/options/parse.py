@@ -1208,6 +1208,21 @@ class Parser:
     def scrollback_pager_history_size(self, val: str, ans: dict[str, typing.Any]) -> None:
         ans['scrollback_pager_history_size'] = scrollback_pager_history_size(val)
 
+    def scrollbar_gap(self, val: str, ans: dict[str, typing.Any]) -> None:
+        ans['scrollbar_gap'] = positive_int(val)
+
+    def scrollbar_interactive(self, val: str, ans: dict[str, typing.Any]) -> None:
+        ans['scrollbar_interactive'] = to_bool(val)
+
+    def scrollbar_opacity(self, val: str, ans: dict[str, typing.Any]) -> None:
+        ans['scrollbar_opacity'] = unit_float(val)
+
+    def scrollbar_track_opacity(self, val: str, ans: dict[str, typing.Any]) -> None:
+        ans['scrollbar_track_opacity'] = unit_float(val)
+
+    def scrollbar_width(self, val: str, ans: dict[str, typing.Any]) -> None:
+        ans['scrollbar_width'] = positive_int(val)
+
     def select_by_word_characters(self, val: str, ans: dict[str, typing.Any]) -> None:
         ans['select_by_word_characters'] = str(val)
 

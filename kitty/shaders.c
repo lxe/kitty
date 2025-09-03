@@ -10,9 +10,11 @@
 #include "cleanup.h"
 #include "colors.h"
 #include <stddef.h>
+#include <string.h>
 #include "window_logo.h"
 #include "srgb_gamma.h"
 #include "uniforms_generated.h"
+#include "state.h"
 
 enum {
     CELL_PROGRAM, CELL_FG_PROGRAM, CELL_BG_PROGRAM, CELL_PROGRAM_SENTINEL,
@@ -737,22 +739,9 @@ draw_visual_bell(const UIRenderData *ui) {
 
 static bool
 has_scrollbar(Screen *screen) {
-    return OPT(scrollback_indicator_opacity) > 0 && screen->linebuf == screen->main_linebuf && screen->scrolled_by;
+    return OPT(scrollbar_opacity) > 0 && screen->linebuf == screen->main_linebuf && screen->historybuf->count > 0;
 }
 
-static bool
-draw_scroll_indicator(color_type bar_color, GLfloat alpha, float frac, const UIRenderData *ui) {
-    bind_program(TINT_PROGRAM);
-#define C(shift) srgb_color((bar_color >> shift) & 0xFF) * alpha
-    glUniform4f(tint_program_layout.uniforms.tint_color, C(16), C(8), C(0), alpha);
-#undef C
-    float bar_width = 0.5f * gl_size(ui->cell_width, ui->screen_width);
-    float bar_height = gl_size(ui->cell_height, ui->screen_height);
-    float bottom = -1.f + MAX(0, 2.f - bar_height) * frac;
-    glUniform4f(tint_program_layout.uniforms.edges, 1.f - bar_width, bottom + bar_height, 1.f, bottom);
-    draw_quad(true, 0);
-    return true;
-}
 
 static unsigned
 render_a_bar(const UIRenderData *ui, WindowBarData *bar, PyObject *title, bool along_bottom) {
@@ -880,9 +869,67 @@ static void
 draw_scrollbar(const UIRenderData *ui) {
     if (!has_scrollbar(ui->screen)) return;
     Screen *screen = ui->screen;
+    Window *window = ui->window;
+    if (!window) return;
+    
     color_type bar_color = colorprofile_to_color(screen->color_profile, screen->color_profile->overridden.highlight_bg, screen->color_profile->configured.highlight_bg).rgb;
     float bar_frac = (float)screen->scrolled_by / (float)screen->historybuf->count;
-    draw_scroll_indicator(bar_color, OPT(scrollback_indicator_opacity), bar_frac, ui);
+    
+    float opacity = OPT(scrollbar_opacity);
+    float track_opacity = OPT(scrollbar_track_opacity);
+    
+    float scrollbar_width_px = (float)OPT(scrollbar_width);
+    float scrollbar_gap_px = (float)OPT(scrollbar_gap);
+    
+    GLsizei window_right_edge = ui->screen_left + ui->screen_width + window->render_data.geometry.spaces.right;
+    GLsizei window_top_edge = ui->screen_top - window->render_data.geometry.spaces.top;
+    GLsizei window_height = ui->screen_height + window->render_data.geometry.spaces.top + window->render_data.geometry.spaces.bottom;
+    
+    save_viewport_using_top_left_origin(
+        window_right_edge - (GLsizei)scrollbar_width_px - (GLsizei)scrollbar_gap_px,
+        window_top_edge + (GLsizei)scrollbar_gap_px,
+        (GLsizei)scrollbar_width_px,
+        window_height - 2 * (GLsizei)scrollbar_gap_px,
+        ui->full_framebuffer_height
+    );
+    
+
+    float visible_fraction = (float)screen->lines / (float)(screen->lines + screen->historybuf->count);
+    
+    float min_thumb_height_fraction = SCROLLBAR_MIN_THUMB_HEIGHT_PX / (float)window_height;
+    float thumb_height_fraction = MAX(min_thumb_height_fraction, visible_fraction);
+    float thumb_height_gl = thumb_height_fraction * 2.0f;
+    
+    float pane_height_gl = 2.0f;
+    float available_space = pane_height_gl - thumb_height_gl;
+    
+    float thumb_bottom_gl = -1.0f + available_space * bar_frac;
+    float thumb_top_gl = thumb_bottom_gl + thumb_height_gl;
+    
+    float scrollbar_top_in_window = (float)(window_top_edge + scrollbar_gap_px) / (float)ui->full_framebuffer_height;
+    float scrollbar_height_in_window = (float)(window_height - 2 * scrollbar_gap_px) / (float)ui->full_framebuffer_height;
+    
+    float thumb_top_fraction = (1.0f - thumb_top_gl) / 2.0f;
+    float thumb_bottom_fraction = (1.0f - thumb_bottom_gl) / 2.0f;
+    
+    window->scrollbar.thumb_top = scrollbar_top_in_window + thumb_top_fraction * scrollbar_height_in_window;
+    window->scrollbar.thumb_bottom = scrollbar_top_in_window + thumb_bottom_fraction * scrollbar_height_in_window;
+    
+    bind_program(TINT_PROGRAM);
+    
+    #define C(shift) srgb_color((bar_color >> shift) & 0xFF) * track_opacity
+    glUniform4f(tint_program_layout.uniforms.tint_color, C(16), C(8), C(0), track_opacity);
+    #undef C
+    glUniform4f(tint_program_layout.uniforms.edges, -1.f, 1.f, 1.f, -1.f);
+    draw_quad(true, 0);
+    
+    #define C(shift) srgb_color((bar_color >> shift) & 0xFF) * opacity
+    glUniform4f(tint_program_layout.uniforms.tint_color, C(16), C(8), C(0), opacity);
+    #undef C
+    glUniform4f(tint_program_layout.uniforms.edges, -1.f, thumb_top_gl, 1.f, thumb_bottom_gl);
+    draw_quad(true, 0);
+    
+    restore_viewport();
 }
 
 static void

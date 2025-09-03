@@ -266,6 +266,71 @@ convert_from_opts_scrollback_indicator_opacity(PyObject *py_opts, Options *opts)
 }
 
 static void
+convert_from_python_scrollbar_opacity(PyObject *val, Options *opts) {
+    opts->scrollbar_opacity = PyFloat_AsFloat(val);
+}
+
+static void
+convert_from_opts_scrollbar_opacity(PyObject *py_opts, Options *opts) {
+    PyObject *ret = PyObject_GetAttrString(py_opts, "scrollbar_opacity");
+    if (ret == NULL) return;
+    convert_from_python_scrollbar_opacity(ret, opts);
+    Py_DECREF(ret);
+}
+
+static void
+convert_from_python_scrollbar_track_opacity(PyObject *val, Options *opts) {
+    opts->scrollbar_track_opacity = PyFloat_AsFloat(val);
+}
+
+static void
+convert_from_opts_scrollbar_track_opacity(PyObject *py_opts, Options *opts) {
+    PyObject *ret = PyObject_GetAttrString(py_opts, "scrollbar_track_opacity");
+    if (ret == NULL) return;
+    convert_from_python_scrollbar_track_opacity(ret, opts);
+    Py_DECREF(ret);
+}
+
+static void
+convert_from_python_scrollbar_interactive(PyObject *val, Options *opts) {
+    opts->scrollbar_interactive = PyObject_IsTrue(val);
+}
+
+static void
+convert_from_opts_scrollbar_interactive(PyObject *py_opts, Options *opts) {
+    PyObject *ret = PyObject_GetAttrString(py_opts, "scrollbar_interactive");
+    if (ret == NULL) return;
+    convert_from_python_scrollbar_interactive(ret, opts);
+    Py_DECREF(ret);
+}
+
+static void
+convert_from_python_scrollbar_width(PyObject *val, Options *opts) {
+    opts->scrollbar_width = PyLong_AsUnsignedLong(val);
+}
+
+static void
+convert_from_opts_scrollbar_width(PyObject *py_opts, Options *opts) {
+    PyObject *ret = PyObject_GetAttrString(py_opts, "scrollbar_width");
+    if (ret == NULL) return;
+    convert_from_python_scrollbar_width(ret, opts);
+    Py_DECREF(ret);
+}
+
+static void
+convert_from_python_scrollbar_gap(PyObject *val, Options *opts) {
+    opts->scrollbar_gap = PyLong_AsUnsignedLong(val);
+}
+
+static void
+convert_from_opts_scrollbar_gap(PyObject *py_opts, Options *opts) {
+    PyObject *ret = PyObject_GetAttrString(py_opts, "scrollbar_gap");
+    if (ret == NULL) return;
+    convert_from_python_scrollbar_gap(ret, opts);
+    Py_DECREF(ret);
+}
+
+static void
 convert_from_python_scrollback_pager_history_size(PyObject *val, Options *opts) {
     opts->scrollback_pager_history_size = PyLong_AsUnsignedLong(val);
 }
@@ -1229,6 +1294,16 @@ convert_opts_from_python_opts(PyObject *py_opts, Options *opts) {
     convert_from_opts_cursor_trail_color(py_opts, opts);
     if (PyErr_Occurred()) return false;
     convert_from_opts_scrollback_indicator_opacity(py_opts, opts);
+    if (PyErr_Occurred()) return false;
+    convert_from_opts_scrollbar_opacity(py_opts, opts);
+    if (PyErr_Occurred()) return false;
+    convert_from_opts_scrollbar_track_opacity(py_opts, opts);
+    if (PyErr_Occurred()) return false;
+    convert_from_opts_scrollbar_interactive(py_opts, opts);
+    if (PyErr_Occurred()) return false;
+    convert_from_opts_scrollbar_width(py_opts, opts);
+    if (PyErr_Occurred()) return false;
+    convert_from_opts_scrollbar_gap(py_opts, opts);
     if (PyErr_Occurred()) return false;
     convert_from_opts_scrollback_pager_history_size(py_opts, opts);
     if (PyErr_Occurred()) return false;

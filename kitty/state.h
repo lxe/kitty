@@ -20,6 +20,9 @@
 #define debug_input(...) if (OPT(debug_keyboard)) { timed_debug_print(__VA_ARGS__); }
 #define debug_fonts(...) if (global_state.debug_font_fallback) { timed_debug_print(__VA_ARGS__); }
 
+#define SCROLLBAR_MIN_THUMB_HEIGHT_PX 50.0f
+#define SCROLLBAR_HITBOX_EXPANSION_PX 5.0f
+
 typedef enum { LEFT_EDGE = 1, TOP_EDGE = 2, RIGHT_EDGE = 4, BOTTOM_EDGE = 8 } Edge;
 typedef enum { REPEAT_MIRROR, REPEAT_CLAMP, REPEAT_DEFAULT } RepeatStrategy;
 typedef enum { WINDOW_NORMAL, WINDOW_FULLSCREEN, WINDOW_MAXIMIZED, WINDOW_MINIMIZED, WINDOW_HIDDEN } WindowState;
@@ -71,6 +74,11 @@ typedef struct Options {
     WindowTitleIn macos_show_window_title_in;
     char *bell_path, *bell_theme;
     float background_opacity, dim_opacity, scrollback_indicator_opacity;
+    bool scrollbar_interactive;
+    float scrollbar_opacity;
+    float scrollbar_track_opacity;
+    unsigned int scrollbar_width;
+    unsigned int scrollbar_gap;
     float text_contrast, text_gamma_adjustment;
     bool text_old_gamma;
 
@@ -144,6 +152,9 @@ typedef struct WindowLogoRenderData {
 
 typedef struct {
     unsigned int left, top, right, bottom;
+    struct {
+        unsigned int left, top, right, bottom;
+    } spaces;
 } WindowGeometry;
 
 typedef struct WindowRenderData {
@@ -214,6 +225,12 @@ typedef struct Window {
         PendingClick *clicks;
         size_t num, capacity;
     } pending_clicks;
+    struct {
+        float thumb_top, thumb_bottom;    // Thumb position
+        bool is_dragging;
+        float drag_start_y;               // Y position where drag started
+        float drag_start_scrolled_by;     // scrolled_by value when drag started
+    } scrollbar;
 } Window;
 
 typedef struct BorderRect {
