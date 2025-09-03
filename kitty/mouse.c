@@ -438,6 +438,7 @@ HANDLER(handle_move_event) {
             return;
         }
         set_mouse_cursor_for_screen(w->render_data.screen);
+        set_mouse_cursor(mouse_cursor_shape);
     }
     
     if (OPT(focus_follows_mouse)) {
@@ -672,6 +673,7 @@ HANDLER(handle_event) {
         set_mouse_cursor(DEFAULT_POINTER);
     } else {
         set_mouse_cursor_for_screen(w->render_data.screen);
+        set_mouse_cursor(mouse_cursor_shape);
     }
     
     send_mouse_leave_event_if_needed(w->id, modifiers);
