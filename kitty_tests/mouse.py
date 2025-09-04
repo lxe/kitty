@@ -304,7 +304,7 @@ class TestMouse(BaseTest):
         self.ae(get_options().scrollbar_track_behavior, 'jump')
 
         # Test with page scrolling behavior
-        s2 = self.create_screen(
+        self.create_screen(
             cols=10, lines=5, scrollback=20,
             options=dict(
                 scrollbar_interactive=True,
