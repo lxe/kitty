@@ -1208,6 +1208,9 @@ class Parser:
     def scrollback_pager_history_size(self, val: str, ans: dict[str, typing.Any]) -> None:
         ans['scrollback_pager_history_size'] = scrollback_pager_history_size(val)
 
+    def scrollbar_autohide(self, val: str, ans: dict[str, typing.Any]) -> None:
+        ans['scrollbar_autohide'] = to_bool(val)
+
     def scrollbar_gap(self, val: str, ans: dict[str, typing.Any]) -> None:
         ans['scrollbar_gap'] = positive_int(val)
 
@@ -1222,6 +1225,14 @@ class Parser:
 
     def scrollbar_opacity(self, val: str, ans: dict[str, typing.Any]) -> None:
         ans['scrollbar_opacity'] = unit_float(val)
+
+    def scrollbar_track_behavior(self, val: str, ans: dict[str, typing.Any]) -> None:
+        val = val.lower()
+        if val not in self.choices_for_scrollbar_track_behavior:
+            raise ValueError(f"The value {val} is not a valid choice for scrollbar_track_behavior")
+        ans["scrollbar_track_behavior"] = val
+
+    choices_for_scrollbar_track_behavior = frozenset({'jump': 1, 'page': 2})
 
     def scrollbar_track_opacity(self, val: str, ans: dict[str, typing.Any]) -> None:
         ans['scrollbar_track_opacity'] = unit_float(val)

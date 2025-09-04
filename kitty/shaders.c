@@ -875,6 +875,8 @@ draw_scrollbar(const UIRenderData *ui) {
     color_type bar_color = colorprofile_to_color(screen->color_profile, screen->color_profile->overridden.highlight_bg, screen->color_profile->configured.highlight_bg).rgb;
     float bar_frac = (float)screen->scrolled_by / (float)screen->historybuf->count;
 
+    if (OPT(scrollbar_autohide) && !window->scrollbar.is_hovering && screen->scrolled_by == 0) return;
+
     float opacity = OPT(scrollbar_opacity);
     float track_opacity = OPT(scrollbar_track_opacity);
 

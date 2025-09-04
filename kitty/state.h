@@ -78,6 +78,8 @@ typedef struct Options {
     unsigned int scrollbar_gap;
     unsigned int scrollbar_min_thumb_height;
     unsigned int scrollbar_hitbox_expansion;
+    bool scrollbar_autohide;
+    ScrollbarTrackBehavior scrollbar_track_behavior;
     float text_contrast, text_gamma_adjustment;
     bool text_old_gamma;
 
@@ -229,6 +231,7 @@ typedef struct Window {
         bool is_dragging;
         float drag_start_y;               // Y position where drag started
         float drag_start_scrolled_by;     // scrolled_by value when drag started
+        bool is_hovering;                 // Mouse is hovering over scrollbar
     } scrollbar;
 } Window;
 

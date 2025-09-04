@@ -293,6 +293,7 @@ initialize_window(Window *w, PyObject *title, bool init_gpu_resources) {
     w->visible = true;
     w->title = title;
     Py_XINCREF(title);
+    w->scrollbar.is_hovering = false;
     if (!set_window_logo(w, OPT(default_window_logo), OPT(window_logo_position), OPT(window_logo_alpha), true, NULL, 0)) {
         log_error("Failed to load default window logo: %s", OPT(default_window_logo));
         if (PyErr_Occurred()) PyErr_Print();

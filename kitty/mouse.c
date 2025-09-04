@@ -285,23 +285,16 @@ cell_for_pos(Window *w, unsigned int *x, unsigned int *y, bool *in_left_half_of_
 
 #define HANDLER(name) static void name(Window UNUSED *w, int UNUSED button, int UNUSED modifiers, unsigned int UNUSED window_idx)
 
-// Scrollbar hit test results
 typedef enum {
     SCROLLBAR_HIT_NONE,
     SCROLLBAR_HIT_TRACK,
     SCROLLBAR_HIT_THUMB
 } ScrollbarHitType;
-
-// Scrollbar geometry cache
-typedef struct {
-    float left_x, right_x, top_y, bottom_y;
-    float width_px, gap_px;
-} ScrollbarGeometry;
-static ScrollbarGeometry calculate_scrollbar_geometry(Window *w);
 static ScrollbarHitType get_scrollbar_hit_type(Window *w, double mouse_x, double mouse_y);
 static bool handle_scrollbar_mouse_event(Window *w, int button, bool is_release, double mouse_x, double mouse_y);
 static void handle_scrollbar_drag(Window *w, double mouse_y);
 static void end_drag(Window *w);
+static void update_scrollbar_hover_state(Window *w, bool hovering);
 
 static void
 set_mouse_cursor_when_dragging(Screen *screen) {
@@ -433,7 +426,9 @@ HANDLER(handle_move_event) {
     if (OPT(scrollbar_interactive) && global_state.callback_os_window) {
         double mouse_x = global_state.callback_os_window->mouse_x;
         double mouse_y = global_state.callback_os_window->mouse_y;
-        if (get_scrollbar_hit_type(w, mouse_x, mouse_y) != SCROLLBAR_HIT_NONE) {
+        bool hovering = get_scrollbar_hit_type(w, mouse_x, mouse_y) != SCROLLBAR_HIT_NONE;
+        update_scrollbar_hover_state(w, hovering);
+        if (hovering) {
             set_mouse_cursor(DEFAULT_POINTER);
             return;
         }
@@ -668,10 +663,16 @@ currently_pressed_button(void) {
 HANDLER(handle_event) {
     modifiers &= ~GLFW_LOCK_MASK;
 
-    if (OPT(scrollbar_interactive) && global_state.callback_os_window &&
-        get_scrollbar_hit_type(w, global_state.callback_os_window->mouse_x,
-                              global_state.callback_os_window->mouse_y) != SCROLLBAR_HIT_NONE) {
-        set_mouse_cursor(DEFAULT_POINTER);
+    if (OPT(scrollbar_interactive) && global_state.callback_os_window) {
+        bool hovering = get_scrollbar_hit_type(w, global_state.callback_os_window->mouse_x,
+                                              global_state.callback_os_window->mouse_y) != SCROLLBAR_HIT_NONE;
+        update_scrollbar_hover_state(w, hovering);
+        if (hovering) {
+            set_mouse_cursor(DEFAULT_POINTER);
+        } else {
+            set_mouse_cursor_for_screen(w->render_data.screen);
+            set_mouse_cursor(mouse_cursor_shape);
+        }
     } else {
         set_mouse_cursor_for_screen(w->render_data.screen);
         set_mouse_cursor(mouse_cursor_shape);
@@ -768,11 +769,17 @@ update_mouse_pointer_shape(void) {
     if (in_tab_bar) {
         mouse_cursor_shape = POINTER_POINTER;
     } else if (w) {
-        if (OPT(scrollbar_interactive) && global_state.callback_os_window &&
-            get_scrollbar_hit_type(w, global_state.callback_os_window->mouse_x,
-                                  global_state.callback_os_window->mouse_y) != SCROLLBAR_HIT_NONE) {
-            mouse_cursor_shape = DEFAULT_POINTER;
-        } else if (w->render_data.screen) {
+        if (OPT(scrollbar_interactive) && global_state.callback_os_window) {
+            bool hovering = get_scrollbar_hit_type(w, global_state.callback_os_window->mouse_x,
+                                                  global_state.callback_os_window->mouse_y) != SCROLLBAR_HIT_NONE;
+            update_scrollbar_hover_state(w, hovering);
+            if (hovering) {
+                mouse_cursor_shape = DEFAULT_POINTER;
+                set_mouse_cursor(mouse_cursor_shape);
+                return;
+            }
+        }
+        if (w->render_data.screen) {
             screen_mark_url(w->render_data.screen, 0, 0, 0, 0);
             set_mouse_cursor_for_screen(w->render_data.screen);
         }
@@ -783,6 +790,12 @@ update_mouse_pointer_shape(void) {
 void
 leave_event(int modifiers) {
     if (global_state.redirect_mouse_handling || global_state.active_drag_in_window || global_state.tracked_drag_in_window || !global_state.mouse_hover_in_window) return;
+
+    if (global_state.mouse_hover_in_window) {
+        Window *w = window_for_id(global_state.mouse_hover_in_window);
+        if (w) update_scrollbar_hover_state(w, false);
+    }
+
     send_mouse_leave_event_if_needed(0, modifiers);
 }
 
@@ -808,6 +821,20 @@ enter_event(int modifiers) {
     send_mouse_leave_event_if_needed(w ? w->id : 0, modifiers);
     if (!w || in_tab_bar) return;
     global_state.mouse_hover_in_window = w->id;
+
+    if (OPT(scrollbar_interactive) && global_state.callback_os_window) {
+        bool hovering = get_scrollbar_hit_type(w, global_state.callback_os_window->mouse_x,
+                                              global_state.callback_os_window->mouse_y) != SCROLLBAR_HIT_NONE;
+        update_scrollbar_hover_state(w, hovering);
+        if (hovering) {
+            mouse_cursor_shape = DEFAULT_POINTER;
+            set_mouse_cursor(mouse_cursor_shape);
+            bool mouse_cell_changed = false, cell_half_changed = false;
+            set_mouse_position(w, &mouse_cell_changed, &cell_half_changed);
+            return;
+        }
+    }
+
     bool mouse_cell_changed = false, cell_half_changed = false;
     if (!set_mouse_position(w, &mouse_cell_changed, &cell_half_changed)) return;
     Screen *screen = w->render_data.screen;
@@ -824,53 +851,42 @@ validate_scrollbar_state(Window *w) {
            w->render_data.screen->historybuf->count > 0;
 }
 
-static ScrollbarGeometry
-calculate_scrollbar_geometry(Window *w) {
-    WindowGeometry *g = &w->render_data.geometry;
-    unsigned int right_with_spaces = g->right + g->spaces.right;
-    unsigned int top_with_spaces = g->top - g->spaces.top;
-    unsigned int bottom_with_spaces = g->bottom + g->spaces.bottom;
+static void
+update_scrollbar_hover_state(Window *w, bool hovering) {
+    if (!w) return;
+    bool changed = w->scrollbar.is_hovering != hovering;
+    w->scrollbar.is_hovering = hovering;
 
-    float width_px = (float)OPT(scrollbar_width);
-    float gap_px = (float)OPT(scrollbar_gap);
-
-    return (ScrollbarGeometry){
-        .right_x = right_with_spaces - gap_px,
-        .left_x = right_with_spaces - gap_px - width_px - (float)OPT(scrollbar_hitbox_expansion),
-        .top_y = top_with_spaces + gap_px,
-        .bottom_y = bottom_with_spaces - gap_px,
-        .width_px = width_px,
-        .gap_px = gap_px
-    };
+    if (changed && OPT(scrollbar_autohide) && global_state.callback_os_window) {
+        global_state.callback_os_window->needs_render = true;
+        request_tick_callback();
+    }
 }
+
+
 
 static ScrollbarHitType
 get_scrollbar_hit_type(Window *w, double mouse_x, double mouse_y) {
     if (!validate_scrollbar_state(w)) return SCROLLBAR_HIT_NONE;
 
-    ScrollbarGeometry geom = calculate_scrollbar_geometry(w);
     WindowGeometry *g = &w->render_data.geometry;
+    float scrollbar_width = (float)OPT(scrollbar_width);
+    float scrollbar_gap = (float)OPT(scrollbar_gap);
+    float hitbox_expansion = (float)OPT(scrollbar_hitbox_expansion);
 
-    // Quick bounds check - include spaces
-    unsigned int left_with_spaces = g->left - g->spaces.left;
-    unsigned int right_with_spaces = g->right + g->spaces.right;
-    unsigned int top_with_spaces = g->top - g->spaces.top;
-    unsigned int bottom_with_spaces = g->bottom + g->spaces.bottom;
+    float right_edge = g->right + g->spaces.right;
+    float scrollbar_left = right_edge - scrollbar_gap - scrollbar_width - hitbox_expansion;
+    float scrollbar_right = right_edge;
+    float scrollbar_top = g->top - g->spaces.top;
+    float scrollbar_bottom = g->bottom + g->spaces.bottom;
 
-    if (mouse_x < left_with_spaces || mouse_x > right_with_spaces ||
-        mouse_y < top_with_spaces || mouse_y > bottom_with_spaces) {
+    if (mouse_x < scrollbar_left || mouse_x > scrollbar_right ||
+        mouse_y < scrollbar_top || mouse_y > scrollbar_bottom) {
         return SCROLLBAR_HIT_NONE;
     }
 
-    // Check if in scrollbar area
-    if (mouse_x < geom.left_x || mouse_x > geom.right_x ||
-        mouse_y < geom.top_y || mouse_y > geom.bottom_y) {
-        return SCROLLBAR_HIT_NONE;
-    }
-
-    // Check thumb hit with expanded hitbox
     OSWindow *os_window = global_state.callback_os_window;
-    if (!os_window) return SCROLLBAR_HIT_TRACK; // No OS window in tests, treat as track hit
+    if (!os_window) return SCROLLBAR_HIT_TRACK;
     float mouse_window_fraction = (float)mouse_y / (float)os_window->viewport_height;
     float hitbox_expansion_fraction = (float)OPT(scrollbar_hitbox_expansion) / (float)os_window->viewport_height;
 
@@ -887,12 +903,25 @@ handle_scrollbar_track_click(Window *w, double mouse_y) {
     Screen *screen = w->render_data.screen;
     if (!validate_scrollbar_state(w)) return;
 
-    ScrollbarGeometry geom = calculate_scrollbar_geometry(w);
-    float mouse_pane_fraction = (float)(mouse_y - geom.top_y) / (float)(geom.bottom_y - geom.top_y);
-
-    // Invert the fraction since scrolled_by = 0 means bottom
-    unsigned int target_scrolled_by = (unsigned int)(screen->historybuf->count * (1.0f - mouse_pane_fraction));
-    screen_history_scroll_to_absolute(screen, target_scrolled_by);
+    if (OPT(scrollbar_track_behavior) == SCROLLBAR_TRACK_JUMP) {
+        WindowGeometry *g = &w->render_data.geometry;
+        float scrollbar_top = g->top - g->spaces.top;
+        float scrollbar_bottom = g->bottom + g->spaces.bottom;
+        float scrollbar_height = scrollbar_bottom - scrollbar_top;
+        float mouse_pane_fraction = (float)(mouse_y - scrollbar_top) / scrollbar_height;
+        unsigned int target_scrolled_by = (unsigned int)(screen->historybuf->count * (1.0f - mouse_pane_fraction));
+        screen_history_scroll_to_absolute(screen, target_scrolled_by);
+    } else {
+        OSWindow *os_window = global_state.callback_os_window;
+        if (!os_window) return;
+        float mouse_window_fraction = (float)mouse_y / (float)os_window->viewport_height;
+        bool click_above_thumb = mouse_window_fraction < w->scrollbar.thumb_top;
+        if (click_above_thumb) {
+            screen_history_scroll(screen, SCROLL_PAGE, true);
+        } else {
+            screen_history_scroll(screen, SCROLL_PAGE, false);
+        }
+    }
 }
 
 static void
@@ -900,9 +929,11 @@ start_scrollbar_drag(Window *w, double mouse_y) {
     Screen *screen = w->render_data.screen;
     if (!validate_scrollbar_state(w)) return;
 
-    ScrollbarGeometry geom = calculate_scrollbar_geometry(w);
-    float mouse_pane_fraction = (float)(mouse_y - geom.top_y) / (float)(geom.bottom_y - geom.top_y);
-
+    WindowGeometry *g = &w->render_data.geometry;
+    float scrollbar_top = g->top - g->spaces.top;
+    float scrollbar_bottom = g->bottom + g->spaces.bottom;
+    float scrollbar_height = scrollbar_bottom - scrollbar_top;
+    float mouse_pane_fraction = (float)(mouse_y - scrollbar_top) / scrollbar_height;
     w->scrollbar.is_dragging = true;
     w->scrollbar.drag_start_y = mouse_pane_fraction;
     w->scrollbar.drag_start_scrolled_by = (float)screen->scrolled_by;
@@ -945,14 +976,14 @@ handle_scrollbar_drag(Window *w, double mouse_y) {
     Screen *screen = w->render_data.screen;
     if (!validate_scrollbar_state(w)) return;
 
-    ScrollbarGeometry geom = calculate_scrollbar_geometry(w);
-    float mouse_pane_fraction = (float)(mouse_y - geom.top_y) / (float)(geom.bottom_y - geom.top_y);
+    WindowGeometry *g = &w->render_data.geometry;
+    float scrollbar_top = g->top - g->spaces.top;
+    float scrollbar_bottom = g->bottom + g->spaces.bottom;
+    float scrollbar_height = scrollbar_bottom - scrollbar_top;
+    float mouse_pane_fraction = (float)(mouse_y - scrollbar_top) / scrollbar_height;
     float delta_y = mouse_pane_fraction - w->scrollbar.drag_start_y;
-
-    // Calculate how much to scroll based on drag distance
     float visible_fraction = (float)screen->lines / (float)(screen->lines + screen->historybuf->count);
-    float scrollbar_height_px = (float)(geom.bottom_y - geom.top_y);
-    float min_thumb_height_fraction = (float)OPT(scrollbar_min_thumb_height) / scrollbar_height_px;
+    float min_thumb_height_fraction = (float)OPT(scrollbar_min_thumb_height) / scrollbar_height;
     float thumb_height = MAX(min_thumb_height_fraction, visible_fraction);
     float available_space = 1.0f - thumb_height;
 

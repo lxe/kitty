@@ -481,6 +481,22 @@ Extra pixels added to the scrollbar thumb hitbox for easier interaction.
 This makes it easier to grab the scrollbar even if the visual representation
 is thin. The default is 5 pixels on each side.''')
 
+opt('scrollbar_autohide', 'yes',
+    option_type='to_bool', ctype='bool', long_text='''
+Hide the scrollbar by default and only show it when scrolling or hovering.
+When enabled, the scrollbar will only be visible when you are scrolling
+(not at the bottom) or when the mouse is hovering over the scrollbar area.
+Set to :code:`yes` to enable or :code:`no` to disable.''')
+
+opt('scrollbar_track_behavior', 'jump',
+    option_type='choices', ctype='scrollbar_track_behavior',
+    choices={'jump': 1, 'page': 2},
+    long_text='''
+Control the behavior when clicking on the scrollbar track (the area outside
+the thumb). With :code:`jump`, clicking on the track will jump directly to
+that position. With :code:`page`, clicking on the track will scroll up or
+down by one page, similar to traditional scrollbar behavior.''')
+
 
 opt('scrollback_pager', 'less --chop-long-lines --RAW-CONTROL-CHARS +INPUT_LINE_NUMBER',
     option_type='to_cmdline',

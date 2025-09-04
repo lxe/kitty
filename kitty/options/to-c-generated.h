@@ -357,6 +357,32 @@ convert_from_opts_scrollbar_hitbox_expansion(PyObject *py_opts, Options *opts) {
 }
 
 static void
+convert_from_python_scrollbar_autohide(PyObject *val, Options *opts) {
+    opts->scrollbar_autohide = PyObject_IsTrue(val);
+}
+
+static void
+convert_from_opts_scrollbar_autohide(PyObject *py_opts, Options *opts) {
+    PyObject *ret = PyObject_GetAttrString(py_opts, "scrollbar_autohide");
+    if (ret == NULL) return;
+    convert_from_python_scrollbar_autohide(ret, opts);
+    Py_DECREF(ret);
+}
+
+static void
+convert_from_python_scrollbar_track_behavior(PyObject *val, Options *opts) {
+    opts->scrollbar_track_behavior = scrollbar_track_behavior(val);
+}
+
+static void
+convert_from_opts_scrollbar_track_behavior(PyObject *py_opts, Options *opts) {
+    PyObject *ret = PyObject_GetAttrString(py_opts, "scrollbar_track_behavior");
+    if (ret == NULL) return;
+    convert_from_python_scrollbar_track_behavior(ret, opts);
+    Py_DECREF(ret);
+}
+
+static void
 convert_from_python_scrollback_pager_history_size(PyObject *val, Options *opts) {
     opts->scrollback_pager_history_size = PyLong_AsUnsignedLong(val);
 }
@@ -1334,6 +1360,10 @@ convert_opts_from_python_opts(PyObject *py_opts, Options *opts) {
     convert_from_opts_scrollbar_min_thumb_height(py_opts, opts);
     if (PyErr_Occurred()) return false;
     convert_from_opts_scrollbar_hitbox_expansion(py_opts, opts);
+    if (PyErr_Occurred()) return false;
+    convert_from_opts_scrollbar_autohide(py_opts, opts);
+    if (PyErr_Occurred()) return false;
+    convert_from_opts_scrollbar_track_behavior(py_opts, opts);
     if (PyErr_Occurred()) return false;
     convert_from_opts_scrollback_pager_history_size(py_opts, opts);
     if (PyErr_Occurred()) return false;
