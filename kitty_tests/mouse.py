@@ -287,3 +287,48 @@ class TestMouse(BaseTest):
         s.draw('12345')
         press(x=0, y=0)
         move(x=2, y=2, q='abcde\n\n12')
+
+    def test_scrollbar_interaction(self):
+        from kitty.fast_data_types import get_options
+
+        # Test scrollbar_autohide option
+        s = self.create_screen(
+            cols=10, lines=5, scrollback=20,
+            options=dict(
+                scrollbar_interactive=True,
+                scrollbar_autohide=True,
+                scrollbar_track_behavior='jump'
+            )
+        )
+        self.assertTrue(get_options().scrollbar_autohide)
+        self.ae(get_options().scrollbar_track_behavior, 'jump')
+
+        # Test with page scrolling behavior
+        s2 = self.create_screen(
+            cols=10, lines=5, scrollback=20,
+            options=dict(
+                scrollbar_interactive=True,
+                scrollbar_autohide=False,
+                scrollbar_track_behavior='page'
+            )
+        )
+        self.assertFalse(get_options().scrollbar_autohide)
+        self.ae(get_options().scrollbar_track_behavior, 'page')
+
+        # Test scrolling behavior
+        s.reset()
+        for i in range(25):  # Fill scrollback
+            s.draw(str(i).ljust(s.columns))
+            if i < 24:
+                s.linefeed(), s.carriage_return()
+
+        # Initially at bottom
+        self.ae(s.scrolled_by, 0)
+
+        # Scroll up
+        s.scroll(10, True)
+        self.ae(s.scrolled_by, 10)
+
+        # Scroll down
+        s.scroll(5, False)
+        self.ae(s.scrolled_by, 5)
