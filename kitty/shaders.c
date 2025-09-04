@@ -871,20 +871,20 @@ draw_scrollbar(const UIRenderData *ui) {
     Screen *screen = ui->screen;
     Window *window = ui->window;
     if (!window) return;
-    
+
     color_type bar_color = colorprofile_to_color(screen->color_profile, screen->color_profile->overridden.highlight_bg, screen->color_profile->configured.highlight_bg).rgb;
     float bar_frac = (float)screen->scrolled_by / (float)screen->historybuf->count;
-    
+
     float opacity = OPT(scrollbar_opacity);
     float track_opacity = OPT(scrollbar_track_opacity);
-    
+
     float scrollbar_width_px = (float)OPT(scrollbar_width);
     float scrollbar_gap_px = (float)OPT(scrollbar_gap);
-    
+
     GLsizei window_right_edge = ui->screen_left + ui->screen_width + window->render_data.geometry.spaces.right;
     GLsizei window_top_edge = ui->screen_top - window->render_data.geometry.spaces.top;
     GLsizei window_height = ui->screen_height + window->render_data.geometry.spaces.top + window->render_data.geometry.spaces.bottom;
-    
+
     save_viewport_using_top_left_origin(
         window_right_edge - (GLsizei)scrollbar_width_px - (GLsizei)scrollbar_gap_px,
         window_top_edge + (GLsizei)scrollbar_gap_px,
@@ -892,43 +892,43 @@ draw_scrollbar(const UIRenderData *ui) {
         window_height - 2 * (GLsizei)scrollbar_gap_px,
         ui->full_framebuffer_height
     );
-    
+
 
     float visible_fraction = (float)screen->lines / (float)(screen->lines + screen->historybuf->count);
-    
+
     float min_thumb_height_fraction = (float)OPT(scrollbar_min_thumb_height) / (float)window_height;
     float thumb_height_fraction = MAX(min_thumb_height_fraction, visible_fraction);
     float thumb_height_gl = thumb_height_fraction * 2.0f;
-    
+
     float pane_height_gl = 2.0f;
     float available_space = pane_height_gl - thumb_height_gl;
-    
+
     float thumb_bottom_gl = -1.0f + available_space * bar_frac;
     float thumb_top_gl = thumb_bottom_gl + thumb_height_gl;
-    
+
     float scrollbar_top_in_window = (float)(window_top_edge + scrollbar_gap_px) / (float)ui->full_framebuffer_height;
     float scrollbar_height_in_window = (float)(window_height - 2 * scrollbar_gap_px) / (float)ui->full_framebuffer_height;
-    
+
     float thumb_top_fraction = (1.0f - thumb_top_gl) / 2.0f;
     float thumb_bottom_fraction = (1.0f - thumb_bottom_gl) / 2.0f;
-    
+
     window->scrollbar.thumb_top = scrollbar_top_in_window + thumb_top_fraction * scrollbar_height_in_window;
     window->scrollbar.thumb_bottom = scrollbar_top_in_window + thumb_bottom_fraction * scrollbar_height_in_window;
-    
+
     bind_program(TINT_PROGRAM);
-    
+
     #define C(shift) srgb_color((bar_color >> shift) & 0xFF) * track_opacity
     glUniform4f(tint_program_layout.uniforms.tint_color, C(16), C(8), C(0), track_opacity);
     #undef C
     glUniform4f(tint_program_layout.uniforms.edges, -1.f, 1.f, 1.f, -1.f);
     draw_quad(true, 0);
-    
+
     #define C(shift) srgb_color((bar_color >> shift) & 0xFF) * opacity
     glUniform4f(tint_program_layout.uniforms.tint_color, C(16), C(8), C(0), opacity);
     #undef C
     glUniform4f(tint_program_layout.uniforms.edges, -1.f, thumb_top_gl, 1.f, thumb_bottom_gl);
     draw_quad(true, 0);
-    
+
     restore_viewport();
 }
 

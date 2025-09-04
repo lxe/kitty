@@ -991,7 +991,7 @@ PYWRAP1(set_window_render_data) {
     id_type os_window_id, tab_id, window_id;
     WindowGeometry g = {0};
     Screen *screen;
-    PA("KKKOIIIIIIII", &os_window_id, &tab_id, &window_id, &screen, 
+    PA("KKKOIIIIIIII", &os_window_id, &tab_id, &window_id, &screen,
        B(left), B(top), B(right), B(bottom),
        S(left), S(top), S(right), S(bottom));
 
