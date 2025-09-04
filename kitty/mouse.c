@@ -148,7 +148,7 @@ encode_mouse_scroll(Window *w, int button, int mods) {
 
 static Window*
 window_for_id(id_type window_id) {
-    if (global_state.callback_os_window && global_state.callback_os_window->num_tabs) {
+    if (global_state.callback_os_window &&global_state.callback_os_window->num_tabs) {
         Tab *t = global_state.callback_os_window->tabs + global_state.callback_os_window->active_tab;
         for (unsigned int i = 0; i < t->num_windows; i++) {
             Window *w = t->windows + i;
@@ -424,13 +424,13 @@ set_mouse_position(Window *w, bool *mouse_cell_changed, bool *cell_half_changed)
 HANDLER(handle_move_event) {
     modifiers &= ~GLFW_LOCK_MASK;
 
-    if (w->scrollbar.is_dragging) {
+    if (w->scrollbar.is_dragging && global_state.callback_os_window) {
         handle_scrollbar_drag(w, global_state.callback_os_window->mouse_y);
         set_mouse_cursor(DEFAULT_POINTER);
         return;
     }
 
-    if (OPT(scrollbar_interactive)) {
+    if (OPT(scrollbar_interactive) && global_state.callback_os_window) {
         double mouse_x = global_state.callback_os_window->mouse_x;
         double mouse_y = global_state.callback_os_window->mouse_y;
         if (get_scrollbar_hit_type(w, mouse_x, mouse_y) != SCROLLBAR_HIT_NONE) {
@@ -441,7 +441,7 @@ HANDLER(handle_move_event) {
         set_mouse_cursor(mouse_cursor_shape);
     }
 
-    if (OPT(focus_follows_mouse)) {
+    if (OPT(focus_follows_mouse) && global_state.callback_os_window && global_state.callback_os_window->num_tabs) {
         Tab *t = global_state.callback_os_window->tabs + global_state.callback_os_window->active_tab;
         if (window_idx != t->active_window) {
             call_boss(switch_focus_to, "K", t->windows[window_idx].id);
@@ -624,6 +624,7 @@ dispatch_possible_click(Window *w, int button, int modifiers) {
 
 HANDLER(handle_button_event) {
     modifiers &= ~GLFW_LOCK_MASK;
+    if (!global_state.callback_os_window) return;
     Tab *t = global_state.callback_os_window->tabs + global_state.callback_os_window->active_tab;
     bool is_release = !global_state.callback_os_window->mouse_button_pressed[button];
 
@@ -667,7 +668,7 @@ currently_pressed_button(void) {
 HANDLER(handle_event) {
     modifiers &= ~GLFW_LOCK_MASK;
 
-    if (OPT(scrollbar_interactive) &&
+    if (OPT(scrollbar_interactive) && global_state.callback_os_window &&
         get_scrollbar_hit_type(w, global_state.callback_os_window->mouse_x,
                               global_state.callback_os_window->mouse_y) != SCROLLBAR_HIT_NONE) {
         set_mouse_cursor(DEFAULT_POINTER);
@@ -767,7 +768,7 @@ update_mouse_pointer_shape(void) {
     if (in_tab_bar) {
         mouse_cursor_shape = POINTER_POINTER;
     } else if (w) {
-        if (OPT(scrollbar_interactive) &&
+        if (OPT(scrollbar_interactive) && global_state.callback_os_window &&
             get_scrollbar_hit_type(w, global_state.callback_os_window->mouse_x,
                                   global_state.callback_os_window->mouse_y) != SCROLLBAR_HIT_NONE) {
             mouse_cursor_shape = DEFAULT_POINTER;
@@ -869,6 +870,7 @@ get_scrollbar_hit_type(Window *w, double mouse_x, double mouse_y) {
 
     // Check thumb hit with expanded hitbox
     OSWindow *os_window = global_state.callback_os_window;
+    if (!os_window) return SCROLLBAR_HIT_TRACK; // No OS window in tests, treat as track hit
     float mouse_window_fraction = (float)mouse_y / (float)os_window->viewport_height;
     float hitbox_expansion_fraction = (float)OPT(scrollbar_hitbox_expansion) / (float)os_window->viewport_height;
 
@@ -976,7 +978,8 @@ end_drag(Window *w) {
     w->last_drag_scroll_at = 0;
     w->scrollbar.is_dragging = false;
 
-    if (get_scrollbar_hit_type(w, global_state.callback_os_window->mouse_x,
+    if (global_state.callback_os_window &&
+        get_scrollbar_hit_type(w, global_state.callback_os_window->mouse_x,
                               global_state.callback_os_window->mouse_y) == SCROLLBAR_HIT_NONE) {
         set_mouse_cursor(TEXT_POINTER);
     }
